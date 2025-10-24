@@ -24,28 +24,14 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Change String Case
-      id: case
-      uses: ASzc/change-string-case-action@v2
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
       with:
-        string: ${{ github.repository }}
-
-    - name: Display repository name
-      run: echo ${{ steps.case.outputs.lowercase }}
-
-    - name: Find-and-replace strings
-      id: slash
-      uses: mad9000/actions-find-and-replace-string@2
-      with:
-        source: ${{ github.ref_name }}
-        find: '/'
-        replace: '-'
-
-    - name: Display issue name
-      run: echo ${{ steps.slash.outputs.value }}
-
-    - name: Build the Docker image
-      run: | 
-        docker build . --file Dockerfile.ace --tag equal-access-server:latest
-        docker tag equal-access-server:latest ${{ env.REGISTRY }}/${{ steps.case.outputs.lowercase }}:${{ steps.slash.outputs.value }}
-        docker push ${{ env.REGISTRY }}/${{ steps.case.outputs.lowercase }}:${{ steps.slash.outputs.value }}
+        context: .
+        file: Dockerfile.ace
+        push: true
+        platforms: linux/amd64,linux/arm64
+        tags: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
