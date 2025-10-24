@@ -1,0 +1,51 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Log in to the Container registry
+      uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Change String Case
+      id: case
+      uses: ASzc/change-string-case-action@v2
+      with:
+        string: ${{ github.repository }}
+
+    - name: Display repository name
+      run: echo ${{ steps.case.outputs.lowercase }}
+
+    - name: Find-and-replace strings
+      id: slash
+      uses: mad9000/actions-find-and-replace-string@2
+      with:
+        source: ${{ github.ref_name }}
+        find: '/'
+        replace: '-'
+
+    - name: Display issue name
+      run: echo ${{ steps.slash.outputs.value }}
+
+    - name: Build the Docker image
+      run: | 
+        docker build . --file Dockerfile.ace --tag equal-access-server:latest
+        docker tag equal-access-server:latest ${{ env.REGISTRY }}/${{ steps.case.outputs.lowercase }}:${{ steps.slash.outputs.value }}
+        docker push ${{ env.REGISTRY }}/${{ steps.case.outputs.lowercase }}:${{ steps.slash.outputs.value }}
