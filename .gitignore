@@ -1,1 +1,2 @@
-node-modeules/
+node_modules/
+.DS_Store
