@@ -27,10 +27,13 @@ class PagePool {
 
     if (this.pages.length < this.maxSize) {
       const page = await this.browser.newPage();
+      page.setDefaultNavigationTimeout(30000);
 
+      await page.setOfflineMode(true);
       await page.setRequestInterception(true);
+      
       page.on('request', (request) => {
-        if (['image', 'stylesheet', 'font', 'media'].includes(request.resourceType())) {
+        if (['image', 'stylesheet', 'font', 'media', 'xhr', 'fetch', 'websocket'].includes(request.resourceType())) {
           request.abort();
         } else {
           request.continue();
@@ -102,13 +105,24 @@ export async function aceCheck(html: string, browser: puppeteer.Browser, guideli
   }
 
   const { page, hasScript } = await pagePool.getPage();
-
   let scriptAdded = false;
 
   try {
-    await page.setContent(html, { waitUntil: 'domcontentloaded' });
+    try {
+      await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 5000 }); 
+    }
+    catch (err: any) {
+      // sometimes a page takes too long to load, so retry it before we give up
+      if (err.name === 'TimeoutError') {
+        console.warn('Page failed to load in 5 seconds, trying with 60 seconds...');
+        await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 60000 });
+      }
+      else {
+        throw err;
+      }
+    }
 
-    let scriptAdded = hasScript;
+    scriptAdded = hasScript;
     if (!hasScript) {
       await page.addScriptTag({
         path: require.resolve(acePath)
@@ -159,6 +173,17 @@ export async function aceCheck(html: string, browser: puppeteer.Browser, guideli
       const key = `${result.value[0]}|${result.value[1]}`;
       return combos.has(key);
     });
+
+    // remove a few unneeded properties from the final JSON
+    delete report['nls'];
+    delete report['numExecuted'];
+    delete report['ruleTime'];
+    delete report['totalTime'];
+
+    // remove ruleTime from each result
+    for (const result of report.results) {
+      delete result['ruleTime'];
+    }
 
     return report;
   } finally {

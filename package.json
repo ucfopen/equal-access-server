@@ -15,7 +15,9 @@
   "description": "",
   "dependencies": {
     "async-mutex": "^0.5.0",
+    "dotenv": "^17.2.3",
     "express": "^4.21.2",
+    "ioredis": "^5.8.2",
     "jsdom": "^26.0.0",
     "puppeteer": "^24.2.1"
   },
