@@ -19,7 +19,7 @@ const DEFAULT_REPORT_LEVELS = ['violation', 'potentialviolation', 'manual'];
 app.use(bodyParser.json());
 let browser: puppeteer.Browser;
 
-const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+let redis: Redis | undefined;
 const SCAN_QUEUE = 'scan_queue';
 
 const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) =>
@@ -55,6 +55,7 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 });
 
 async function pollRedisQueue() {
+  if (!redis) return;
   while (true) {
     try {
       // pop message from scan queue
@@ -111,6 +112,7 @@ async function pollRedisQueue() {
 
     // if REDIS_URL is set, then only start redis queue polling
     if (process.env.REDIS_URL) {
+      redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
       console.log("REDIS_URL set, starting Redis queue polling...");
       pollRedisQueue();
     }
