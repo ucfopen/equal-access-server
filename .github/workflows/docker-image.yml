@@ -17,6 +17,12 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Generate image tag
+      id: image_tag
+      run: |
+        ref="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+        echo "value=${ref//\//-}" >> "$GITHUB_OUTPUT"
+
     - name: Log in to the Container registry
       uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
       with:
@@ -34,4 +40,4 @@ jobs:
         file: Dockerfile.ace
         push: true
         platforms: linux/amd64,linux/arm64
-        tags: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+        tags: ghcr.io/${{ github.repository }}:${{ steps.image_tag.outputs.value }}
