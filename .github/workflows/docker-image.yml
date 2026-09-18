@@ -2,9 +2,7 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "dev" ]
 
 env:
   REGISTRY: ghcr.io
@@ -40,4 +38,4 @@ jobs:
         file: Dockerfile.ace
         push: true
         platforms: linux/amd64,linux/arm64
-        tags: ghcr.io/${{ github.repository }}:${{ steps.image_tag.outputs.value }}
+        tags: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
